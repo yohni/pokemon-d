@@ -39,13 +39,44 @@ contract PokemonD is ERC721 {
     // to store the owner of the NFT and reference it later.
     mapping(address => uint256) public nftHolders;
 
+    struct BigBoss {
+        string name;
+        string imageURI;
+        uint256 hp;
+        uint256 maxHp;
+        uint256 attackDamage;
+        string skillName;
+    }
+
+    BigBoss public bigBoss;
+
     constructor(
         string[] memory characterNames,
         string[] memory characterImageURIs,
         uint256[] memory characterHp,
         uint256[] memory characterAttackDmg,
-        string[] memory characterSkillNames
+        string[] memory characterSkillNames,
+        string memory bossName,
+        string memory bossImageURIs,
+        uint256 bossHp,
+        uint256 bossAttackDmg,
+        string memory bossSkillName
     ) ERC721("Pokemons", "POKEMON") {
+        bigBoss = BigBoss({
+            name: bossName,
+            imageURI: bossImageURIs,
+            hp: bossHp,
+            maxHp: bossHp,
+            attackDamage: bossAttackDmg,
+            skillName: bossSkillName
+        });
+
+        console.log(
+            "Done initializing boss %s w/ HP %s, img %s",
+            bigBoss.name,
+            bigBoss.hp,
+            bigBoss.imageURI
+        );
         for (uint256 i = 0; i < characterNames.length; i += 1) {
             defaultCharacters.push(
                 CharacterAttributes({
@@ -149,5 +180,55 @@ contract PokemonD is ERC721 {
         );
 
         return output;
+    }
+
+    function attackBoss() public {
+        // Get the state of the player's NFT.
+        uint256 nftTokenIdOfPlayer = nftHolders[msg.sender];
+        CharacterAttributes storage player = nftHolderAttributes[
+            nftTokenIdOfPlayer
+        ];
+        console.log(
+            "\nPlayer w/ character %s about to attack. Has %s HP and %s AD",
+            player.name,
+            player.hp,
+            player.attackDamage
+            // player.skillName
+        );
+        console.log(
+            "Boss %s has %s HP and %s AD",
+            bigBoss.name,
+            bigBoss.hp,
+            bigBoss.attackDamage
+            // bigBoss.skillName
+        );
+        // Make sure the player has more than 0 HP.
+        require(player.hp > 0, "Error: character must have HP to attack boss.");
+        // Make sure the boss has more than 0 HP.
+        require(bigBoss.hp > 0, "Error: boss must have HP to attack boss.");
+        // Allow player to attack boss.
+        if (bigBoss.hp < player.attackDamage) {
+            bigBoss.hp = 0;
+        } else {
+            bigBoss.hp = bigBoss.hp - player.attackDamage;
+        }
+        // Allow boss to attack player.
+        if (player.hp < bigBoss.attackDamage) {
+            player.hp = 0;
+        } else {
+            player.hp = player.hp - bigBoss.attackDamage;
+        }
+
+        // Console for ease.
+        console.log(
+            "Player attacked %s. New boss hp: %s",
+            bigBoss.name,
+            bigBoss.hp
+        );
+        console.log(
+            "Boss attacked %s. New player hp: %s\n",
+            player.name,
+            player.hp
+        );
     }
 }
